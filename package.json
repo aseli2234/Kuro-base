@@ -1,0 +1,30 @@
+{
+  "name": "kuro",
+  "version": "1.0.0",
+  "description": "KURO — modular ESM WhatsApp bot base built on Elaina Baileys with a SQLite core and a dynamic plugin system",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "check": "node --check src/index.js",
+    "test": "node --test \"test/*.test.js\"",
+    "generate:menu": "node scripts/generate-menu.js"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "whatsapp",
+    "bot",
+    "baileys",
+    "elaina-baileys",
+    "sqlite"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@rexxhayanasi/elaina-baileys": "^1.4.2",
+    "better-sqlite3": "^12.11.1",
+    "jimp": "^1.6.1",
+    "qrcode-terminal": "^0.12.0"
+  }
+}

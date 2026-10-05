@@ -1,0 +1,92 @@
+# ==============================================================================
+# KURO — Git Ignore Configuration
+# ==============================================================================
+
+# ── Dependencies ─────────────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+
+# ── Local Configurations & Secrets ───────────────────────────────────────────
+# settings.js is committed as default template.
+# Keep private API keys, custom owner numbers, etc. in settings.local.js
+settings.local.js
+.env
+.env.*
+!.env.example
+*.local
+
+# ── WhatsApp Session & Auth Credentials ──────────────────────────────────────
+# NEVER commit authentication state or keys to public repositories
+session/
+*.session
+session.json
+creds.json
+auth_info_baileys/
+.baileys_store*
+
+# ── Database & SQLite Storage ─────────────────────────────────────────────────
+# SQLite database files and write-ahead logs
+database/*.sqlite
+database/*.sqlite-shm
+database/*.sqlite-wal
+database/*.db
+database/*.db-shm
+database/*.db-wal
+*.sqlite
+*.sqlite3
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-shm
+*.db-wal
+
+# ── Dynamic Media, Uploads & Caches ──────────────────────────────────────────
+# Keep base/default media assets (e.g. media/menu.jpg, media/README.md)
+# Ignore runtime custom uploads and generated assets
+media/thumbnails/*
+!media/thumbnails/.gitkeep
+media/generated/*
+!media/generated/.gitkeep
+media/temp/*
+!media/temp/.gitkeep
+media/downloads/*
+!media/downloads/.gitkeep
+media/cache/*
+!media/cache/.gitkeep
+
+# ── Runtime Scratch Space & Logs ─────────────────────────────────────────────
+tmp/
+temp/
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── OS & Editor Metadata ─────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Editors & IDEs
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+
+# ── Test & Coverage Output ───────────────────────────────────────────────────
+coverage/
+.nyc_output/
