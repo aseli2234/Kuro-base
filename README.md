@@ -1,93 +1,119 @@
 # KURO
 
-Base bot WhatsApp modular modern yang dibangun di atas **[@rexxhayanasi/elaina-baileys](https://github.com/rexxzyid/elaina-baileys)**.
+Base bot WhatsApp modular modern berperforma tinggi yang dibangun di atas **[@rexxhayanasi/elaina-baileys](https://www.npmjs.com/package/@rexxhayanasi/elaina-baileys)**.
 
-Murni ESM · Sistem Plugin Dinamis · SQLite Bawaan Sejak Awal · Custom Pairing Code · Sistem Owner & Izin Bertingkat · Menu Link-Preview Ukuran Besar · Dukungan LID Penuh · Theme Manager WhatsApp Dinamis.
+Murni ESM · Sistem Plugin Dinamis · SQLite Bawaan (Mode WAL) · Custom 8-Char Pairing Code · Sistem Owner & Izin Bertingkat · Menu Link-Preview Ukuran Penuh (Full-Width Card) · Dukungan Penuh Akun LID & Nomor Telepon · Theme Manager WhatsApp Dinamis.
+
+---
+
+## Struktur Direktori
 
 ```text
 KURO/
 ├── src/
-│   ├── index.js              Titik masuk utama: boot, shutdown, restart
-│   ├── runtime.js            Aksi tingkat proses yang dibagikan ke plugin
+│   ├── index.js                  Titik masuk utama: inisialisasi boot, shutdown aman, auto-restart
+│   ├── runtime.js                Aksi tingkat proses runtime (status PID, RAM, load, restart)
 │   ├── config/
-│   │   ├── defaults.js       Nilai default bawaan (safety net)
-│   │   └── index.js          Memuat settings.js, normalisasi, dan validasi
+│   │   ├── defaults.js           Nilai default bawaan seluruh konfigurasi bot (safety net)
+│   │   └── index.js              Pemuat, normalisasi nomor/path, dan validasi settings.js
 │   ├── connection/
-│   │   ├── index.js          ConnectionManager: buka, tutup, dan reconnect
-│   │   ├── socket.js         Inisialisasi makeWASocket dengan opsi KURO
-│   │   ├── auth.js           State autentikasi (multi-file / sqlite)
-│   │   ├── pairing.js        Alur custom pairing code
-│   │   └── reconnect.js      Bounded exponential backoff reconnect
+│   │   ├── index.js              ConnectionManager: penanganan open, close, reconnect backoff
+│   │   ├── socket.js             Inisialisasi makeWASocket dengan opsi Elaina Baileys
+│   │   ├── auth.js               Pengelola state autentikasi (multi-file / sqlite)
+│   │   ├── pairing.js            Alur permintaan custom pairing code WhatsApp
+│   │   └── reconnect.js          Kalkulasi backoff eksponensial dengan jitter
 │   ├── database/
-│   │   ├── index.js          DatabaseManager — satu-satunya pengelola SQLite
-│   │   ├── connection.js     Koneksi tunggal dengan mode WAL
-│   │   ├── schema.js         Daftar migrasi database berversi
-│   │   ├── migrations.js     Runner migrasi otomatis (PRAGMA user_version)
-│   │   └── helpers.js        Normalisasi JID, konversi JSON/boolean
+│   │   ├── index.js              DatabaseManager — API terpusat untuk operasi SQLite
+│   │   ├── connection.js         Koneksi tunggal SQLite dengan mode WAL & foreign keys ON
+│   │   ├── schema.js             Daftar migrasi database berversi (001 s/d 005)
+│   │   ├── migrations.js         Runner migrasi otomatis berbasis PRAGMA user_version
+│   │   └── helpers.js            Normalisasi JID, konversi JSON/boolean/timestamp
 │   ├── handler/
-│   │   ├── index.js          messages.upsert → dispatch ke plugin
-│   │   ├── command.js        Parser perintah + filter izin + isolasi error
-│   │   ├── context.js        Objek `ctx` lengkap yang diterima setiap plugin
-│   │   └── permissions.js    Pemeriksaan owner, admin, self mode, dan mute
-│   ├── plugins/
-│   │   ├── registry.js       Pendaftaran nama & trigger plugin
-│   │   ├── loader.js         Scan direktori, import dinamis, validasi, reload
-│   │   ├── commands.js       Operasi file plugin (add, get, delete)
-│   │   └── utils.js          Validasi metadata dan perenderan menu
+│   │   ├── index.js              Dispatcher event messages.upsert ke sistem plugin
+│   │   ├── command.js            Parser command, argumen, seleksi prefix, dan isolasi error
+│   │   ├── context.js            Pembuat objek `ctx` lengkap untuk setiap eksekusi plugin
+│   │   └── permissions.js        Pemeriksaan otorisasi server-side (Owner, Admin, Self, Mute)
 │   ├── lib/
-│   │   ├── serializer.js     Serialisasi WAMessage menjadi objek sederhana
-│   │   ├── messages.js       Helper kirim pesan, reply, react, download media
-│   │   ├── preview.js        Pembuat kartu link preview besar (thumbnail-link)
-│   │   ├── theme.js          Pengelola tema SQLite, validasi SSRF, pembersihan media
-│   │   ├── menu-manager.js   Pengelompokan menu dan izin tampilan
-│   │   ├── contact.js        Helper vCard kontak WhatsApp
-│   │   ├── channel.js        Helper newsletter / channel WhatsApp
-│   │   ├── lid.js            Resolusi alamat LID ↔ Nomor Telepon (PN)
-│   │   ├── media.js          Buffer media, file sementara, pembersihan berkala
-│   │   ├── message-cache.js  Cache pesan keluar untuk penanganan resend
-│   │   └── utils.js          Helper utilitas umum
+│   │   ├── channel.js            Helper interaksi WhatsApp Newsletter / Channel
+│   │   ├── contact.js            Helper pembuatan vCard kontak WhatsApp
+│   │   ├── lid.js                Resolusi dua arah LID WhatsApp ↔ Nomor Telepon (PN)
+│   │   ├── media.js              Pengelola buffer media, berkas sementara, dan pembersihan
+│   │   ├── menu-manager.js       Generator menu dinamis berbasis izin dan kategori
+│   │   ├── message-cache.js      Cache pesan keluar terikat batas untuk fitur resend
+│   │   ├── messages.js           Helper pengiriman pesan, quote reply, react, download media
+│   │   ├── preview.js            Pembuat kartu link preview besar (jalur thumbnail-link)
+│   │   ├── serializer.js         Serialisasi WAMessage mentah menjadi objek praktis
+│   │   ├── theme.js              Pengelola tema SQLite, validasi SSRF URL, & auto-clean media
+│   │   └── utils.js              Helper utilitas umum
+│   ├── plugins/
+│   │   ├── commands.js           Operasi file plugin (tambah, baca, hapus via chat)
+│   │   ├── loader.js             Pemindaian folder, import dinamis ESM, & reload plugin
+│   │   ├── registry.js           Penyimpanan registri nama plugin dan mapping trigger
+│   │   └── utils.js              Validasi metadata plugin dan format daftar menu
 │   └── utils/
-│       ├── logger.js         Logger terpusat dengan adapter pino
-│       ├── message-logger.js Pencatat pesan masuk & keluar dalam kotak rapi
-│       ├── format.js         Pemformatan output teks & angka
-│       ├── time.js           Waktu berbasis zona waktu dan kalkulator uptime
-│       └── greeting.js       Ucapan salam bahasa Jepang sesuai timezone
-├── plugins/                  ← Folder tempat plugin diletakkan (berdasarkan kategori)
-│   ├── general/  ping, menu, about
-│   ├── tools/    runtime, sysinfo
-│   ├── owner/    theme, owner, eval, shell, reload, plugins, addplugin,
-│   │             getplugin, delplugin, setprefix, restart, shutdown, channel, self
-│   └── group/    kick, mute
-├── test/                     Test suite bawaan (node:test)
-├── database/                 Folder database SQLite (kuro.sqlite)
-├── media/                    Aset media statis (menu.jpg) & folder thumbnails/
-├── session/                  Kredensial WhatsApp (ter-ignore di git)
-├── tmp/                      Penyimpanan berkas sementara (ter-ignore di git)
-├── settings.js               ← Konfigurasi utama bot
-├── settings.local.js         (Opsional) Override rahasia/lokal
-└── package.json
+│       ├── format.js             Pemformatan output teks, waktu, byte, dan angka
+│       ├── greeting.js           Salam bahasa Jepang berdasarkan waktu timezone
+│       ├── logger.js             Logger terpusat sistem berbasis Pino
+│       ├── message-logger.js     Pencatat pesan masuk & keluar dalam kotak berbingkai ANSI
+│       └── time.js               Penghitung waktu uptime dan jam zona waktu
+├── plugins/                      Folder tempat meletakkan file plugin (per kategori)
+│   ├── general/
+│   │   ├── about.js              Informasi spesifikasi bot dan environment
+│   │   ├── menu.js               Menu utama berformat link preview besar
+│   │   └── ping.js               Pemeriksaan kecepatan respon bot
+│   ├── group/
+│   │   ├── kick.js               Mengeluarkan anggota dari grup
+│   │   └── mute.js               Mengatur mode bisu bot di grup (mute on/off)
+│   ├── owner/
+│   │   ├── addplugin.js          Menambahkan file plugin baru via chat
+│   │   ├── channel.js            Mengirim pesan ke saluran newsletter WhatsApp
+│   │   ├── delplugin.js          Menghapus plugin dari sistem dan disk
+│   │   ├── eval.js               Eksekutor kode JavaScript (sync / async)
+│   │   ├── getplugin.js          Mengunduh source code plugin sebagai file .js
+│   │   ├── owner.js              Mengirim kartu kontak vCard owner
+│   │   ├── plugins.js            Melihat daftar dan status seluruh plugin
+│   │   ├── reload.js             Memuat ulang plugin tanpa restart bot
+│   │   ├── restart.js            Me-restart proses bot
+│   │   ├── self.js               Mengaktifkan/menonaktifkan mode self (owner only)
+│   │   ├── setprefix.js          Mengubah prefix bot permanen di database
+│   │   ├── shell.js              Eksekutor terminal / shell berizin
+│   │   ├── shutdown.js           Mematikan bot secara aman
+│   │   └── theme.js              Theme Manager dinamis WhatsApp
+│   └── tools/
+│       ├── runtime.js            Informasi waktu aktif bot dan status database
+│       └── sysinfo.js            Informasi detail server, memori RSS, CPU, & OS
+├── scripts/
+│   └── generate-menu.js          Script generator banner gambar default menu.jpg
+├── database/                     Tempat file SQLite (kuro.sqlite) & .gitkeep
+├── media/                        Aset media statis (menu.jpg) & direktori thumbnails/
+├── session/                      Kredensial sesi login WhatsApp (ter-ignore di git)
+├── tmp/                          Berkas scratch / sementara (ter-ignore di git)
+├── .gitignore                    Konfigurasi ignore Git yang sudah terfilter rapi
+├── settings.js                   File konfigurasi utama bot
+├── settings.local.js             (Opsional) Override kredensial / rahasia lokal
+├── package.json                  Manifest proyek & dependensi
+└── README.md                     Dokumentasi proyek
 ```
 
 ---
 
-## Persyaratan Sistem
+## Persyaratan Sistem (Requirements)
 
 | Komponen | Persyaratan |
 |---|---|
-| **Node.js** | **Versi 20 ke atas** (Direkomendasikan Node.js 22 atau 24) |
-| **npm** | Versi 10+ |
-| **Sistem Operasi** | Linux, macOS, Windows, Termux |
-| **WhatsApp** | 1 akun WhatsApp aktif untuk dihubungkan |
-| **Git** | Terpasang di perangkat (diperlukan saat instalasi dependensi) |
+| **Node.js** | **Versi 22.0.0 atau lebih baru** (Direkomendasikan Node.js 22 LTS / Node.js 24) |
+| **npm** | Versi 10 ke atas |
+| **Sistem Operasi** | Linux (Ubuntu, Debian, CentOS, Alpine), macOS, Windows, Android (Termux) |
+| **WhatsApp** | 1 nomor WhatsApp aktif untuk dipasangkan sebagai bot |
 
 > [!NOTE]
-> `better-sqlite3` versi `^12` menyediakan *prebuilt binary* resmi, sehingga tidak memerlukan compiler C++ tambahan pada Linux (x64/arm64), macOS, dan Windows. Jika Anda menggunakan sistem operasi berbasis Alpine/musl atau ARMv7, pasang `python3`, `make`, dan `g++` (`apk add --no-cache build-base python3`).
+> Modul `better-sqlite3` versi `^12` telah menyertakan prebuilt binary bawaan untuk arsitektur Linux x64/arm64, macOS, dan Windows x64. Tidak diperlukan instalasi Visual Studio C++ Compiler tambahan.
 
 ---
 
-## Instalasi & Menjalankan Bot
+## Instalasi & Menjalankan
 
-1. **Clone repositori dan masuk ke direktori proyek:**
+1. **Clone repositori:**
    ```bash
    git clone <URL_REPO_ANDA> kuro
    cd kuro
@@ -98,59 +124,64 @@ KURO/
    npm install
    ```
 
-3. **Konfigurasi Bot:**
-   Buka dan sesuaikan file `settings.js`:
+3. **Konfigurasi bot:**
+   Buka file `settings.js` dan sesuaikan nomor owner serta opsi bot:
    ```bash
    nano settings.js
    ```
-   *Minimal atur:* nomor `owner`, `pairing.customCode` (8 karakter), dan `pairing.number`.
 
-4. **Jalankan Bot:**
+4. **Jalankan bot:**
    ```bash
    npm start
    ```
 
-### Memperbarui Library Elaina Baileys
-
-KURO terhubung langsung dengan repositori GitHub master dari library Elaina Baileys untuk mendapatkan fitur dan perbaikan terbaru:
-
-```bash
-npm update @rexxhayanasi/elaina-baileys
-npm test
-npm start
-```
-
 ---
 
-## Konfigurasi
+## Konfigurasi (`settings.js`)
 
-Semua konfigurasi disimpan dalam file JavaScript murni: **`settings.js`**. Tidak memerlukan file `.env` yang rumit.
+Semua konfigurasi bot berpusat pada satu file JavaScript: `settings.js`.
 
 ```js
 // settings.js
 export default {
+  // ── Identitas Bot ──────────────────────────────────────────────────────────
   botName: 'KURO',
-  owner: ['628xxxxxxxxxx'],        // Hanya digit angka, format internasional
-  ownerName: 'KURO Developer',
-  prefix: ['.', '!', '/', '#'],
-  mode: 'public',                  // 'public' | 'private' | 'group'
+  version: '1.0.0',
+  ownerName: 'kuroo',
+  owner: ['62812xxxxxxxx'],        // Nomor owner: format internasional, angka saja
   timezone: 'Asia/Jakarta',
+  prefix: ['.', '!', '/', '#'],
+  mode: 'public',                  // 'public' (semua orang) | 'private' (owner) | 'group' (hanya grup)
+  debug: false,
 
+  // ── Pairing Code ───────────────────────────────────────────────────────────
   pairing: {
-    enabled: true,
-    customCode: 'KURODEV1',        // Wajib tepat 8 karakter alfanumerik
-    number: '628xxxxxxxxxx'        // Kosongkan jika ingin input manual di terminal
+    enabled: true,                 // true = Pairing Code 8 karakter, false = QR terminal
+    customCode: 'KURODEV1',        // Wajib 8 karakter alfanumerik (atau kosongkan untuk random)
+    number: '62812xxxxxxxx'        // Nomor bot (kosongkan jika ingin input interaktif di terminal)
   },
 
-  theme: {
-    name: 'KURO',
-    description: 'Modern modular WhatsApp bot',
-    thumbnail: './media/menu.jpg'
+  // ── Sesi & Database ────────────────────────────────────────────────────────
+  auth: {
+    type: 'multi-file',
+    folder: './session'
+  },
+  database: {
+    type: 'sqlite',
+    path: './database/kuro.sqlite'
   },
 
-  auth: { type: 'multi-file', folder: './session' },
-  connection: { reconnectDelayMs: 3000, reconnectMaxDelayMs: 60000 },
-  database: { type: 'sqlite', path: './database/kuro.sqlite' },
+  // ── Koneksi ────────────────────────────────────────────────────────────────
+  connection: {
+    reconnectDelayMs: 3000,
+    reconnectMaxDelayMs: 60000,
+    reconnectMaxAttempts: 0,       // 0 = Coba reconnect tanpa batas
+    markOnlineOnConnect: false,    // false agar notifikasi WhatsApp tetap masuk ke HP
+    syncFullHistory: false,
+    browser: ['Mac OS', 'Chrome', '14.4.1']
+  },
+
+  // ── Menu (Large Link Preview Card) ─────────────────────────────────────────
   menu: {
     url: 'https://kurolabss.my.id',
     thumbnail: './media/menu.jpg',
@@ -159,209 +190,217 @@ export default {
     thumbnailWidth: 1080,
     thumbnailHeightRatioOverride: 0
   },
-  channel: { enabled: false, jid: '', name: '' },
-  plugins: { directory: './plugins', extensions: ['.js'], disabledPrefix: '_' },
-  limits: { evalOutputLimit: 4000, shellOutputLimit: 4000, shellTimeoutMs: 30000 },
-  api: { key: '' }
-}
-```
 
-### Hierarki Resolusi Konfigurasi
+  // ── Channel WhatsApp ───────────────────────────────────────────────────────
+  channel: {
+    enabled: false,
+    jid: '',                       // Contoh: '123456789@newsletter'
+    name: ''
+  },
 
-```text
-settings.js  →  src/config/defaults.js  →  settings.local.js  →  config akhir
-  (utama)         (fallback default)          (opsional rahasia)
-```
+  // ── Direktori Plugin ───────────────────────────────────────────────────────
+  plugins: {
+    directory: './plugins',
+    extensions: ['.js'],
+    disabledPrefix: '_',           // Awalan file untuk menonaktifkan (contoh: _menu.js)
+    maxSourceBytes: 524288
+  },
 
-- **`settings.local.js` (Opsional):** Jika Anda ingin menyimpan nomor telepon pribadi atau API key tanpa khawatir ter-commit ke Git, buat file `settings.local.js`. File ini otomatis di-merge di atas `settings.js` dan sudah diabaikan di `.gitignore`.
-- **Validasi Otomatis:** Kesalahan konfigurasi (seperti kode pairing bukan 8 karakter atau format nomor salah) akan dideteksi dan diperingatkan saat boot tanpa merusak sistem.
+  // ── Terminal Message Logger ────────────────────────────────────────────────
+  messageLog: {
+    enabled: true,
+    showContent: true,
+    showMediaType: true,
+    showGroupName: true,
+    showTimestamp: true,
+    showSender: true,
+    showMessageType: true,
+    showOutgoing: true,
+    useColors: true,
+    multiline: true,
+    wrapText: true
+  },
 
----
+  // ── Keamanan Shell Owner ($ …) ─────────────────────────────────────────────
+  shellAllowlist: [
+    'node', 'npm', 'npx', 'git',
+    'ls', 'dir', 'cat', 'head', 'tail', 'wc',
+    'uptime', 'free', 'df', 'du', 'ps', 'whoami', 'uname', 'date', 'env'
+  ],
 
-## Sistem Pairing (Menghubungkan Akun)
+  // ── Batasan Sistem ─────────────────────────────────────────────────────────
+  limits: {
+    evalOutputLimit: 4000,
+    shellOutputLimit: 4000,
+    shellTimeoutMs: 30000
+  },
 
-KURO mendukung **Custom 8-Character Pairing Code** secara bawaan sehingga Anda tidak perlu memindai kode QR.
-
-```text
-Bot Dimulai → Cek Folder Sesi → Apakah Sesi Ada?
-                                   ├── YA  → Langsung Terhubung
-                                   └── TIDAK → Minta Nomor Telepon
-                                                → Ajukan Custom Pairing Code (8 Karakter)
-                                                → Tampilkan Kode di Terminal
-                                                → Masukkan Kode di WhatsApp HP
-```
-
-### Cara Menghubungkan:
-1. Jalankan bot via `npm start`.
-2. Masukkan nomor WhatsApp yang akan digunakan sebagai bot (jika belum diatur di `pairing.number`).
-3. Bot akan menampilkan 8 karakter kode (misal: `KURODEV1`).
-4. Di WhatsApp ponsel: Buka **Perangkat Tertaut (Linked Devices) > Tautkan dengan nomor telepon**.
-5. Masukkan kode tersebut. Bot akan otomatis tersambung dan sesi disimpan di folder `session/`.
-
-> [!TIP]
-> Jika ingin menggunakan pemindaian QR di terminal, ubah `pairing.enabled: false` pada `settings.js`.
-
----
-
-## Database SQLite
-
-KURO menggunakan SQLite murni dengan performa tinggi sejak instalasi awal:
-- **Mode WAL (Write-Ahead Logging)**: Pembacaan dan penulisan data berlangsung cepat dan simultan tanpa locking issue.
-- **Sistem Migrasi Otomatis**: Skema database diperbarui secara terstruktur menggunakan `PRAGMA user_version`.
-- **Tabel Database**: `users`, `chats`, `groups`, `settings`, `theme_config`, `plugins`, `stats`, `lid_mappings`, `command_usage`, `group_metadata_cache`.
-
-Semua plugin mengakses database melalui helper terpusat `ctx.db` (misal: `ctx.db.getUser()`, `ctx.db.setTheme()`, `ctx.db.getGroup()`).
-
----
-
-## Sistem Plugin
-
-Setiap plugin dibuat sebagai modul JavaScript ESM mandiri:
-
-```js
-// plugins/general/ping.js
-export default {
-  name: 'ping',
-  command: ['ping'],
-  aliases: ['p', 'speed'],
-  category: 'general',
-  description: 'Mengecek kecepatan respon bot',
-
-  async execute(ctx) {
-    return ctx.reply('Pong! 🏓')
+  // ── API Pihak Ketiga ───────────────────────────────────────────────────────
+  api: {
+    key: ''
   }
 }
 ```
 
-### Properti Metadata Plugin
-
-| Properti | Tipe | Penjelasan |
-|---|---|---|
-| `name` | string | Identifier unik plugin. |
-| `command` | string \| array | Kata kunci pemanggil perintah (utama muncul di menu). |
-| `aliases` | array | Nama alias perintah tambahan. |
-| `category` | string | Kategori menu (default mengikuti nama folder). |
-| `description` | string | Deskripsi fungsi perintah. |
-| `ownerOnly` | boolean | Hanya bisa dieksekusi oleh owner. |
-| `adminOnly` | boolean | Hanya untuk admin grup (owner otomatis lolos). |
-| `groupOnly` | boolean | Hanya dapat digunakan di dalam grup. |
-| `privateOnly` | boolean | Hanya dapat digunakan di chat pribadi. |
-| `botAdmin` | boolean | Bot harus berstatus admin di grup. |
-| `hidden` | boolean | Sembunyikan dari tampilan daftar `.menu`. |
-| `execute` | function | Fungsi utama yang dijalankan: `async (ctx) => {}`. |
-
-### Objek Context (`ctx`) yang Tersedia
-
-Setiap plugin menerima parameter `ctx` yang kaya akan informasi dan fungsi:
-
-```js
-// Metadata & Socket
-ctx.sock            // Instance socket Elaina Baileys
-ctx.m               // Objek pesan yang sudah diserialisasi
-ctx.db              // Instance DatabaseManager
-ctx.config          // Konfigurasi aktif
-ctx.plugins         // Registry plugin
-
-// Informasi Pengirim & Chat
-ctx.chat            // JID chat/grup
-ctx.sender          // JID pengirim
-ctx.senderNumber    // Nomor telepon pengirim (angka murni)
-ctx.senderPn        // JID nomor telepon pengirim
-ctx.senderLid       // JID LID pengirim
-ctx.isOwner         // Status apakah pengirim adalah owner
-ctx.isAdmin         // Status apakah pengirim adalah admin grup
-ctx.isBotAdmin      // Status apakah bot adalah admin grup
-ctx.isGroup         // Boolean pesan berasal dari grup
-ctx.isPrivate       // Boolean pesan berasal dari private chat
-
-// Konten Pesan
-ctx.text            // Isi teks pesan / caption
-ctx.command         // Nama perintah yang dipanggil
-ctx.args            // Array argumen setelah command
-ctx.argText         // Seluruh teks argumen dalam satu string
-ctx.quoted          // Objek pesan yang dibalas (replied message)
-ctx.isMedia         // Apakah pesan berupa media (gambar/video/audio/sticker)
-
-// Helper Interaksi
-await ctx.reply('Teks balasan')              // Membalas dengan quote
-await ctx.send('Teks langsung')              // Mengirim tanpa quote
-await ctx.react('👍')                         // Memberikan reaksi emoji
-const buffer = await ctx.download()          // Mengunduh media dari pesan / reply
-await ctx.sendCard({ text, title, ... })     // Mengirim menu link preview besar
-```
+### Opsi Rahasia Lokal (`settings.local.js`)
+Jika Anda mem-push bot ke repositori publik, buat file `settings.local.js` (otomatis ter-ignore di Git). File ini akan di-merge di atas `settings.js` sehingga API key dan nomor pribadi Anda tetap aman.
 
 ---
 
-## Fitur Theme Manager
+## Alur Pairing Code
 
-KURO dilengkapi dengan **Theme Manager** yang memungkinkan owner mengubah identitas bot dan tampilan menu WhatsApp secara dinamis dari chat tanpa restart bot.
+KURO menggunakan alur pairing code 8 karakter tanpa perlu memindai QR code kamera:
 
-### Perintah Theme Manager (Owner Only)
+1. Jalankan `npm start`.
+2. Jika sesi belum ada, bot akan meminta nomor telepon WhatsApp Anda (atau membaca dari `pairing.number`).
+3. Bot akan menampilkan 8 karakter kode (misalnya: `KURODEV1`).
+4. Buka **WhatsApp di HP > Perangkat Tertaut > Tautkan dengan nomor telepon**.
+5. Masukkan kode tersebut. Bot akan otomatis tersambung dan menyimpan kredensial ke folder `session/`.
+
+---
+
+## Database SQLite & Migrasi
+
+KURO menggunakan SQLite murni dengan performa tinggi:
+- **Koneksi Tunggal Mode WAL**: Mencegah race condition dan file lock.
+- **Migrasi Terkelola (`src/database/schema.js`)**:
+  - `001_initial`: Tabel `users`, `chats`, `groups`, `settings`, `plugins`, `stats`, `lid_mappings`, `command_usage`.
+  - `002_add_premium`: Dukungan status premium user.
+  - `003_add_group_metadata_cache`: Caching subject grup WhatsApp.
+  - `004_add_group_settings`: Kolom `is_muted` untuk mute grup.
+  - `005_add_theme_config`: Tabel `theme_config` untuk Theme Manager WhatsApp.
+
+Semua query dieksekusi melalui `ctx.db` menggunakan prepared statement.
+
+---
+
+## Theme Manager
+
+Theme Manager memungkinkan owner mengatur identitas dan tampilan link preview menu KURO langsung dari WhatsApp secara permanen tanpa restart:
 
 ```text
-.theme                      Menampilkan panduan Theme Manager dan status saat ini
-.theme thumb set <url>      Mengubah thumbnail menu dari URL gambar HTTPS publik
-.theme thumb set            Mengubah thumbnail dengan me-reply gambar di WhatsApp
-.theme thumb reset          Mengembalikan thumbnail ke default settings.js
-.theme desc set <teks>      Mengubah deskripsi preview link menu
-.theme desc reset           Mengembalikan deskripsi ke default settings.js
-.theme name set <nama>      Mengubah nama bot pada menu
-.theme name reset           Mengembalikan nama bot ke default settings.js
-.theme reset                Mereset seluruh tema & membersihkan folder thumbnails
+🎨 KURO THEME MANAGER
+
+› .theme
+  Menampilkan panduan Theme Manager dan status tema saat ini.
+
+› .theme thumb set <url>
+  Mengatur gambar thumbnail menu menggunakan URL HTTPS publik (dilengkapi proteksi SSRF).
+
+› .theme thumb set
+  Mengatur thumbnail menu dengan membalas (reply) gambar WhatsApp.
+
+› .theme thumb reset
+  Mengembalikan thumbnail ke default dan mengosongkan folder thumbnails.
+
+› .theme desc set <teks>
+  Mengubah deskripsi link preview di bawah thumbnail menu.
+
+› .theme desc reset
+  Mengembalikan deskripsi link preview ke default settings.js.
+
+› .theme name set <nama>
+  Mengubah nama bot pada menu.
+
+› .theme name reset
+  Mengembalikan nama bot ke default settings.js.
+
+› .theme reset
+  Mereset seluruh konfigurasi tema ke default settings.js serta membersihkan
+  seluruh file di folder media/thumbnails/ agar hemat penyimpanan server.
 ```
 
-> [!TIP]
-> **Pembersihan Otomatis**: Saat menjalankan `.theme reset` atau `.theme thumb reset`, seluruh file custom thumbnail di dalam folder `media/thumbnails/` akan otomatis dihapus untuk menghemat ruang penyimpanan server VPS Anda.
-
 ---
 
-## Daftar Perintah Utama
+## Daftar Perintah Bot
 
-### 1. Perintah Umum (General)
-- `.menu` — Menampilkan menu utama bot dalam format link preview besar.
-- `.menu <kategori>` — Menampilkan menu khusus untuk kategori tertentu.
-- `.ping` — Mengecek kecepatan respon bot dan waktu respon server.
-- `.about` — Informasi seputar versi bot, platform, database, dan engine Baileys.
+### 1. Perintah Umum (`plugins/general/`)
+- `.menu` — Menampilkan menu bot lengkap dengan kartu link preview besar.
+- `.menu <kategori>` — Menampilkan menu khusus kategori tertentu (contoh: `.menu owner`).
+- `.ping` — Mengecek latensi respon bot ke server WhatsApp.
+- `.about` — Menampilkan ringkasan identitas bot, platform, versi Node, dan database.
 
-### 2. Perintah Tools & Sistem
-- `.runtime` — Menampilkan uptime bot, penggunaan RAM proses, beban CPU, dan PID.
-- `.sysinfo` — Menampilkan spesifikasi lengkap server (Model CPU, OS, RAM total/bebas, RSS Memory, Uptime, Node.js).
+### 2. Perintah Alat & Sistem (`plugins/tools/`)
+- `.runtime` — Menampilkan waktu aktif bot (uptime), penggunaan memori proses, dan status database.
+- `.sysinfo` — Menampilkan spesifikasi detail server (Model CPU, OS, RAM total/free, memori RSS, Node.js).
 
-### 3. Perintah Grup
-- `.kick @user` — Mengeluarkan member dari grup (Admin & Bot Admin).
-- `.mute on` / `.mute off` — Mengaktifkan/menonaktifkan mode bisu pada grup tertentu (Owner Only).
+### 3. Perintah Grup (`plugins/group/`)
+- `.kick @user` — Mengeluarkan anggota dari grup (memerlukan hak admin grup & bot admin).
+- `.mute on` / `.mute off` — Mengaktifkan/menonaktifkan mode senyap bot di grup tertentu (Owner only).
 
-### 4. Perintah Owner & Pengembang
-- `.self on` / `.self off` — Mengubah mode bot menjadi Self (hanya merespon pesan dari owner) atau Public.
-- `.owner` — Mengirim kartu kontak vCard resmi owner bot.
-- `.reload <nama|all>` — Mereload plugin tertentu atau memuat ulang semua plugin tanpa restart bot.
-- `.plugins` — Menampilkan daftar seluruh plugin yang aktif dan nonaktif.
-- `.addplugin <kategori> <nama>` — Menambahkan atau memperbarui plugin langsung melalui chat WhatsApp.
-- `.getplugin <nama>` — Mengunduh source code plugin sebagai file `.js`.
-- `.delplugin <nama>` — Menghapus plugin dari sistem dan disk.
-- `.setprefix <prefix>` — Mengubah prefix bot secara permanen ke database.
-- `.restart confirm` — Me-restart proses bot secara mulus.
+### 4. Perintah Owner & Pengembang (`plugins/owner/`)
+- `.theme` — Mengelola tema, nama, deskripsi, dan cover menu bot.
+- `.self on` / `.self off` — Mode self (bot hanya merespon perintah dari owner) atau public.
+- `.owner` — Mengirim kartu nama vCard owner resmi bot.
+- `.plugins` — Menampilkan inventaris plugin yang dimuat dan status error jika ada.
+- `.reload <nama|all>` — Memuat ulang file plugin secara instan tanpa restart bot.
+- `.addplugin <kategori> <nama>` — Menambahkan plugin baru dengan mengirim/me-reply kode `.js`.
+- `.getplugin <nama>` — Mengunduh kode sumber plugin sebagai dokumen `.js`.
+- `.delplugin <nama>` — Menghapus plugin dari direktori dan registri.
+- `.setprefix <prefix>` — Mengubah prefix bot secara dinamis.
+- `.channel post <teks>` — Mengirim postingan ke saluran WhatsApp (Newsletter).
+- `.restart confirm` — Memulai ulang proses bot.
 - `.shutdown confirm` — Mematikan proses bot dengan aman.
 
-### Shortcut Eksekusi Kode (Owner Only):
-- `! <kode>` — Menjalankan ekspresi JavaScript sinkron secara instan.
-- `!! <kode>` — Menjalankan kode JavaScript asinkron (`await` didukung).
-- `$ <perintah>` — Menjalankan perintah terminal/shell (dibatasi oleh `shellAllowlist` untuk keamanan).
+### Shortcut Khusus Owner:
+- `! <kode>` — Eksekusi JavaScript sinkron.
+- `!! <kode>` atau `> <kode>` atau `=> <kode>` — Eksekusi JavaScript asinkron (`await` didukung).
+- `$ <perintah>` — Eksekusi shell/terminal sesuai daftar `shellAllowlist`.
 
 ---
 
-## Format & Desain Menu
+## Panduan Pembuatan Plugin
 
-Menu KURO dirancang elegan dan informatif:
-1. **Ucapan Salam Berdasarkan Waktu**: Disesuaikan dengan zona waktu di `settings.timezone` (`おはようございます` Pagi, `こんにちは` Siang, `こんばんは` Malam).
-2. **Kartu Tautan Lebar (Full-Width Large Card)**: Menggunakan teknologi `thumbnail-link` native WhatsApp sehingga gambar banner tampil penuh di perangkat pengguna.
-3. **Filter Izin Otomatis**: Pengguna biasa tidak akan melihat perintah khusus owner, menjaga kerapian dan keamanan bot.
+Setiap plugin berupa modul JavaScript ESM dengan default export:
+
+```js
+// plugins/tools/contoh.js
+export default {
+  name: 'contoh',
+  command: ['contoh'],
+  aliases: ['cth'],
+  category: 'tools',
+  description: 'Contoh plugin sederhana KURO',
+  ownerOnly: false,
+  groupOnly: false,
+
+  async execute(ctx) {
+    const user = ctx.db.ensureUser({ jid: ctx.sender })
+    await ctx.reply(`Halo ${ctx.pushName ?? user.number}! Bot berjalan normal.`)
+  }
+}
+```
+
+### Properti Context (`ctx`) yang Disediakan:
+- **Koneksi & Database:** `ctx.sock`, `ctx.db`, `ctx.config`, `ctx.plugins`, `ctx.logger`, `ctx.channel`.
+- **Pengirim & Chat:** `ctx.chat`, `ctx.sender`, `ctx.senderNumber`, `ctx.senderPn`, `ctx.senderLid`, `ctx.pushName`.
+- **Status Otorisasi:** `ctx.isOwner`, `ctx.isAdmin`, `ctx.isBotAdmin`, `ctx.isGroup`, `ctx.isPrivate`, `ctx.isPremium`, `ctx.isBanned`.
+- **Isi Pesan:** `ctx.text`, `ctx.body`, `ctx.command`, `ctx.args`, `ctx.argText`, `ctx.prefix`, `ctx.quoted`, `ctx.isMedia`, `ctx.mimetype`.
+- **Aksi Cepat:**
+  - `await ctx.reply('balasan quote')`
+  - `await ctx.send('pesan tanpa quote')`
+  - `await ctx.react('✅')`
+  - `const buffer = await ctx.download()` (Unduh gambar/audio/video dari pesan atau reply)
+  - `await ctx.sendCard({ text, url, title, description, thumbnail })`
+  - `await ctx.sendContact({ name, number })`
 
 ---
 
-## Panduan Deployment (Menjalankan di Server)
+## Menjalankan Pengujian (Testing)
 
-### 1. Menggunakan PM2 (Direkomendasikan untuk VPS)
+Proyek ini dilengkapi dengan suite pengujian unit & integrasi bawaan Node.js:
+
+```bash
+npm test
+```
+
+Pengujian memverifikasi koneksi database, migrasi skema, parser perintah, otorisasi pengguna, parser tema, integrasi link-preview WhatsApp, dan eksekusi plugin.
+
+---
+
+## Panduan Deployment di Server VPS
+
+### Menjalankan dengan PM2 (Rekomendasi)
 ```bash
 npm install -g pm2
 pm2 start src/index.js --name kuro
@@ -369,8 +408,8 @@ pm2 save
 pm2 startup
 ```
 
-### 2. Menggunakan Systemd Service
-Buat file `/etc/systemd/system/kuro.service`:
+### Menjalankan dengan Systemd
+Buat service di `/etc/systemd/system/kuro.service`:
 ```ini
 [Unit]
 Description=KURO WhatsApp Bot
@@ -382,55 +421,20 @@ User=root
 WorkingDirectory=/root/kuro
 ExecStart=/usr/bin/node src/index.js
 Restart=always
-RestartSec=10
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target
 ```
-Aktifkan service:
+
+Jalankan service:
 ```bash
 sudo systemctl daemon-reload
 sudo systemctl enable --now kuro
 ```
 
-### 3. Menggunakan Docker
-```dockerfile
-FROM node:22-slim
-WORKDIR /app
-RUN apt-get update && apt-get install -y python3 make g++ git && rm -rf /var/lib/apt/lists/*
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY . .
-VOLUME ["/app/session", "/app/database", "/app/media/thumbnails", "/app/tmp"]
-CMD ["node", "src/index.js"]
-```
-
----
-
-## Panduan Pencadangan (Backup)
-
-| Direktori / File | Fungsi |
-|---|---|
-| `session/` | Kredensial login WhatsApp (Wajib dicadangkan agar tidak perlu pairing ulang). |
-| `database/kuro.sqlite` | Seluruh data pengguna, grup, statistik, dan tema. |
-| `settings.js` / `settings.local.js` | File konfigurasi bot. |
-| `plugins/` | File-file plugin kustom Anda. |
-
----
-
-## Troubleshooting (Penyelesaian Masalah)
-
-| Masalah | Solusi |
-|---|---|
-| `Custom pairing code must be exactly 8 chars` | Pastikan `pairing.customCode` di `settings.js` tepat 8 karakter (contoh: `KURODEV1`). |
-| Pairing ditolak dengan status `bad-request` | WhatsApp menolak browser kustom yang tidak dikenal. Gunakan `Mac OS`, `Windows`, `Ubuntu`, atau `Baileys` pada `connection.browser`. |
-| Pairing ditolak dengan status `rate-overlimit` | Terlalu banyak percobaan pairing dalam waktu singkat. Tunggu 5-10 menit sebelum mencoba kembali. |
-| Bot tidak membalas pesan di grup/pribadi | Periksa pengaturan `mode` di `settings.js` atau cek apakah fitur `.self on` / `.mute on` sedang aktif. |
-| Perubahan `settings.js` tidak berefek | Konfigurasi dibaca saat bot pertama kali menyala. Lakukan restart bot via terminal atau ketik `.restart confirm`. |
-| Error `better-sqlite3` saat instalasi | Gunakan Node.js versi LTS (v20/v22) dan pastikan versi `better-sqlite3` pada `package.json` tetap berada di versi `^12.x`. |
-
 ---
 
 ## Lisensi
 
-Proyek ini dilisensikan di bawah lisensi **MIT**. Anda bebas mengembangkan, memodifikasi, dan menggunakan base bot KURO untuk kebutuhan pribadi maupun komunitas dengan tetap mematuhi Ketentuan Layanan WhatsApp.
+Proyek ini didistribusikan di bawah lisensi **MIT**. Anda bebas menggunakan, memodifikasi, dan mengembangkan base bot ini untuk keperluan personal maupun publik sesuai dengan Ketentuan Layanan WhatsApp.
